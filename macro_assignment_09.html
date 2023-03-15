@@ -1,0 +1,239 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Let's Chat!</title>
+    <!-- custom styles for this application -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Itim&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2&family=Itim&display=swap');
+
+        body {
+            margin: 0;
+            font-family: 'Itim', cursive;
+            background-color: #b8cba6;
+        }
+
+        h1 {
+            font-weight: bold;
+            text-align: center;
+            margin: 0;
+            margin-bottom: 1em;
+            padding: .4em;
+            font-size: 2em;
+            color: white;
+            background-color: rgb(36, 36, 36);
+            width: 100%;
+        }
+
+        #messages {
+            display: block;
+            width: 500px;
+            height: 300px;
+            font-family: 'Baloo 2', cursive;
+            background-color: rgb(36, 36, 36);
+            color: white;
+            border:rgb(36, 36, 36);
+        }
+
+        #panel_chat {
+            margin: 50px;
+        }
+
+        #container {
+            margin: auto;
+            display: block;
+            width: max-content;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Hi how r u :^)</h1>
+    <div id="container">
+        <div id="panel_name">
+            Name: <input type="text" id="name">
+            <button id="savename">Chat</button>
+        </div>
+
+        <div id="panel_chat" class="hidden">
+            <select name="roomSelect" id="rooms">
+                <option value="room1">Room 1</option>
+                <option value="room2">Room 2</option>
+                <option value="room3">Room 3</option>
+            </select>
+            <textarea id="messages" readonly></textarea>
+            <input type="text" id="newmessage">
+            <button id="sendmessage">Send Message</button>
+        </div>
+        <button id="changeusername" class="hidden">Change Username</button>
+        <div id="usernamebox" class="hidden">
+            <input type="text" id="newname">
+            <button id="savenewname">Save name</button>
+        </div>
+        <div id="errors"></div>
+
+        <!-- bring in the jQuery library -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+        <!-- custom script for this application -->
+        <script>
+
+            // grab some DOM refs
+            let panel_name = document.querySelector("#panel_name");
+            let panel_chat = document.querySelector("#panel_chat");
+            let name = document.querySelector("#name");
+            let savename = document.querySelector("#savename");
+            let changeusername = document.querySelector("#changeusername");
+
+            panel_chat.scrollTop = panel_chat.scrollHeight;
+            let logintime = new Date().getTime();
+            console.log(logintime);
+            if (localStorage.getItem('username')) {
+                panel_name.classList.add('hidden');
+                panel_chat.classList.remove('hidden');
+                changeusername.classList.remove('hidden');
+                $.ajax({
+                    type: 'POST',
+                    url: 'log.php',
+                    data: {
+                        username: localStorage.getItem('username').toString(),
+                        time: logintime
+                    },
+                    success: function (data, status) {
+                        console.log("success!");
+                    },
+                    error: function (req, data, status) {
+
+                    }
+                })
+            } else {
+                // when the user clicks on the save name we need to progress to the next phase of the program
+                let username;
+                savename.onclick = function (event) {
+                    // grab the name the user entered
+                    username = name.value;
+                    let loginTime = new Date().getTime();
+                    // make sure it has at least one character in it
+                    if (username.length > 0) {
+                        // show the chat panel_chat
+                        localStorage.setItem('username', username);
+                        panel_chat.classList.remove('hidden');
+                        // hide this panel
+                        panel_name.classList.add('hidden');
+                        $.ajax({
+                            type: 'POST',
+                            url: 'log.php',
+                            data: {
+                                user: username,
+                                time: loginTime
+                            },
+                            success: function (data, status) {
+                                console.log("success!");
+                                console.log(data);
+                            },
+                            error: function (req, data, status) {
+
+                            }
+                        });
+                    }
+                }
+            }
+            //api extra credit send a youtube video embed from url
+            //scrollto
+
+            let messages = document.querySelector("#messages");
+            let newmessage = document.querySelector("#newmessage");
+            let sendmessage = document.querySelector("#sendmessage");
+            let usernamebox = document.querySelector("#usernamebox");
+            let savenewname = document.querySelector("#savenewname");
+            let newname = document.querySelector("#newname");
+            let autoScroll = true;
+            let roomselect = document.querySelector("#rooms");
+            let roomNum = roomselect.value;
+
+            roomselect.addEventListener("change", function (event) {
+                roomNum = roomselect.value;
+
+            });
+
+            // when the user chooses to chat we need to send that data to the server to be stored
+            sendmessage.onclick = function (event) {
+                // package up this message and send it to the server to be stored for later use
+                let msg = newmessage.value;
+                if (msg.length > 0) {
+                    document.querySelector("#errors").innerHTML = "";
+                    $.ajax({
+                        type: 'POST',
+                        url: 'savemessage.php',
+                        data: {
+                            message: msg,
+                            nickname: localStorage.getItem('username'),
+                            chatNum: roomNum
+                        },
+                        success: function (data, status) {
+                            console.log("success!");
+                            console.log(data);
+
+                        },
+                        error: function (req, data, status) {
+
+                        }
+                    });
+                }
+                else {
+                    document.querySelector("#errors").innerHTML = "Message must contain at least 1 character.";
+                }
+            }
+
+            changeusername.onclick = function (event) {
+                usernamebox.classList.remove('hidden');
+            }
+
+            savenewname.onclick = function (event) {
+                let username = newname.value;
+                if (username.length > 0) {
+                    localStorage.setItem('username', username);
+                    usernamebox.classList.add('hidden');
+                }
+            }
+
+            function scrollToEnd() {
+                messages.scrollTo({
+                    top: messages.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+
+            $(messages).mouseover(function (event) { autoScroll = false; });
+            $(messages).mouseout(function (event) { autoScroll = true; });
+
+            getData();
+            // function to grab data from the server
+            function getData() {
+                // contact the text file and grab its current value
+                $.ajax({
+                    type: 'GET',
+                    url: 'data/' + roomNum + '.txt?nocache=' + Math.random(),
+                    success: function (data, status) {
+                        messages.value = data;
+                        if (autoScroll) {
+                            scrollToEnd();
+                        }
+                        setTimeout(getData(roomNum), 1000);
+                    }
+                }
+                );
+            }
+
+        </script>
+    </div>
+
+</body>
+
+</html>
